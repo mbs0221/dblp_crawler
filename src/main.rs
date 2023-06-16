@@ -3,8 +3,16 @@
 use clap::{App, Arg};
 use reqwest::blocking::get;
 use serde::Deserialize;
-use serde_json::{Result, Value};
+use serde_json::Value;
 use core::fmt;
+
+#[derive(Debug)]
+enum Error {
+    SerdeError(serde_json::Error),
+    RequestError(reqwest::Error),
+}
+
+type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Deserialize)]
 struct JsonResponse {
@@ -275,14 +283,10 @@ fn main() {
         )
     };
 
-    let handle_result = |url: &str| -> Result<()> {
-        let response = get(url).unwrap();
-        let body: Value = response.json().unwrap();
-        let response: JsonResponse = serde_json::from_value(body)?;
-
-        println!("{}", response);
-
-        Ok(())
+    let handle_result = |url: &str| -> Result<JsonResponse> {
+        let response = get(url).map_err(|e| Error::RequestError(e))?;
+        let body: Value = response.json().map_err(|e| Error::RequestError(e))?;
+        serde_json::from_value(body).map_err(|e| Error::SerdeError(e))
     };
 
     let result = match query_type {
@@ -292,7 +296,8 @@ fn main() {
         _ => panic!("Invalid query type"),
     };
 
-    if let Err(err) = result {
-        eprintln!("Error: {:?}", err);
+    match result {
+        Ok(response) => println!("{}", response),
+        Err(err) => eprintln!("Error: {:?}", err),
     }
 }
