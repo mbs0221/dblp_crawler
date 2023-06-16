@@ -1,4 +1,4 @@
-use std::fmt::Display;
+// use std::fmt::Display;
 
 use clap::{App, Arg};
 use reqwest::blocking::get;
@@ -13,15 +13,7 @@ struct JsonResponse {
 
 impl fmt::Display for JsonResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for completion in &self.result.completions.c {
-            writeln!(f, "Completion: {}", completion.text)?;
-        }
-        writeln!(f)?;
-
-        for hit in &self.result.hits.hit {
-            writeln!(f, "Info: {}", hit.info)?;
-            writeln!(f, "-----------------------------")?;
-        }
+        writeln!(f, "{}", self.result)?;
 
         Ok(())
     }
@@ -36,9 +28,30 @@ struct SearchResult {
     time: Time,
 }
 
+impl fmt::Display for SearchResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.completions)?;
+        writeln!(f, "{}", self.hits)?;
+        writeln!(f, "{}", self.query)?;
+        writeln!(f, "{}", self.status)?;
+        writeln!(f, "{}", self.time)?;
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct Completions {
     c: Vec<Completion>,
+}
+
+impl fmt::Display for Completions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Completions:")?;
+        for completion in &self.c {
+            writeln!(f, "- {}", completion)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -46,9 +59,25 @@ struct Completion {
     text: String,
 }
 
+impl fmt::Display for Completion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.text)
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct Hits {
     hit: Vec<Hit>,
+}
+
+impl fmt::Display for Hits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Hits:")?;
+        for hit in &self.hit {
+            writeln!(f, "{}", hit)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -61,28 +90,45 @@ struct Hit {
     url: String,
 }
 
+impl fmt::Display for Hit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.id)?;
+        writeln!(f, "{}", self.info)?;
+        writeln!(f, "{}", self.score)?;
+        writeln!(f, "{}", self.url)?;
+        writeln!(f, "-----------------------------")?;
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct Info {
+    #[serde(default)]
     access: String,
     authors: Authors,
+    #[serde(default)]
     doi: String,
     ee: String,
     key: String,
+    #[serde(default)]
     number: String,
+    #[serde(default)]
     pages: String,
     title: String,
     r#type: String,
     url: String,
     venue: String,
+    #[serde(default)]
     volume: String,
     year: String,
 }
 
 impl fmt::Display for Info {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Title: {}", self.title)?;
-        writeln!(f, "Authors: {}", self.authors)?;
-        writeln!(f, "ee: {}", self.ee)?;
+        writeln!(f, "{}", self.title)?;
+        writeln!(f, "{}", self.authors)?;
+        writeln!(f, "{}", self.ee)?;
+        writeln!(f, "{} {} ({}) {} {}", self.venue, self.pages, self.number, self.volume, self.year)?;
         Ok(())
     }
 }
@@ -124,11 +170,27 @@ struct Status {
     text: String,
 }
 
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Code: {}", self.code)?;
+        write!(f, "Text: {}", self.text)?;
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct Time {
     #[serde(rename = "@unit")]
     unit: String,
     text: String,
+}
+
+impl fmt::Display for Time {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Unit: {}", self.unit)?;
+        write!(f, "Text: {}", self.text)?;
+        Ok(())
+    }
 }
 
 fn main() {
@@ -219,15 +281,6 @@ fn main() {
         let response: JsonResponse = serde_json::from_value(body)?;
 
         println!("{}", response);
-
-        // if let Some(items) = papers.items {
-        //     for paper in items {
-        //         println!("{}", paper);
-        //         println!("-----------------------------");
-        //     }
-        // } else {
-        //     println!("No papers found");
-        // }
 
         Ok(())
     };

@@ -1,9 +1,11 @@
 [package]
 name = "dblp_crawler"
 description = "DBLP Crawler"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-license = "GPL"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/mbs0221/dblp_crawler"
 
 [package.metadata.deb]
 maintainer = "Benshan Mei <mbs2021@163.com>"
